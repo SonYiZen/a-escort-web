@@ -8,9 +8,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import PricingEditor, {
+  type PricingDraft,
+} from "@/components/admin/PricingEditor";
+import ReviewsUploader, {
+  type ReviewDraft,
+} from "@/components/admin/ReviewsUploader";
+import ServicesEditor from "@/components/admin/ServicesEditor";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-import { uploadGirlMedia } from "@/lib/media";
+import {
+  formatPriceLabel,
+  uploadGirlMedia,
+  uploadReviewImage,
+} from "@/lib/media";
 import type { GirlInsert } from "@/lib/girls";
+import type { PricingPlan } from "@/types";
 
 const REGIONS = ["新竹市", "竹北市", "竹東", "竹南"];
 const NATIONALITIES = ["本島台妹", "溫柔越妹", "白皙泰妹", "熱情菲妹"];
@@ -58,6 +70,21 @@ export default function AdminNew() {
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [isHot, setIsHot] = useState(false);
 
+  // 基礎消費方案（預設三列，可增刪）
+  const [pricing, setPricing] = useState<PricingDraft[]>([
+    { label: "一節/50min/1S", price: "3200" },
+    { label: "兩節/100min/2S", price: "6400" },
+    { label: "三節送一節/200min/NS", price: "9600" },
+  ]);
+  // 服務內容（動態清單）
+  const [services, setServices] = useState<string[]>([]);
+  // 客評截圖（僅圖片）
+  const [reviews, setReviews] = useState<ReviewDraft>({
+    existingUrls: [],
+    files: [],
+    previews: [],
+  });
+
   /** 選擇檔案：只取第一個，並產生本機預覽 */
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -89,11 +116,42 @@ export default function AdminNew() {
         throw new Error("尚未設定 Supabase 環境變數，無法上架。");
       }
 
-      // 步驟 1：先上傳檔案到 girl-media
-      setUploadProgress("上傳檔案中…");
+      // 步驟 1：先上傳主視覺檔案到 girl-media
+      setUploadProgress("上傳主視覺中…");
       const { publicUrl } = await uploadGirlMedia(mediaFile);
 
-      // 步驟 2：拿公開網址 + 身材數據一起寫入 girls 表
+      // 步驟 2：逐張上傳客評截圖（僅圖片）
+      let reviewUrls: string[] = [];
+      if (reviews.files.length > 0) {
+        setUploadProgress(`上傳客評截圖中（0/${reviews.files.length}）…`);
+        reviewUrls = [];
+        for (let i = 0; i < reviews.files.length; i++) {
+          const { publicUrl: reviewUrl } = await uploadReviewImage(
+            reviews.files[i],
+          );
+          reviewUrls.push(reviewUrl);
+          setUploadProgress(
+            `上傳客評截圖中（${i + 1}/${reviews.files.length}）…`,
+          );
+        }
+      }
+
+      // 步驟 3：整理基礎消費與服務內容（過濾空白列）
+      const pricingPlans: PricingPlan[] = pricing
+        .filter((p) => p.label.trim() !== "")
+        .map((p) => {
+          const priceValue = Math.round(Number(p.price)) || 0;
+          return {
+            label: p.label.trim(),
+            price: priceValue,
+            priceLabel: formatPriceLabel(priceValue),
+          };
+        });
+      const serviceList = services
+        .map((s) => s.trim())
+        .filter((s) => s !== "");
+
+      // 步驟 4：拿公開網址 + 身材數據一起寫入 girls 表
       setUploadProgress("寫入資料庫中…");
       const payload: GirlInsert = {
         name: name.trim(),
@@ -109,6 +167,9 @@ export default function AdminNew() {
         price_range: budget,
         is_hot: isHot,
         gallery: [publicUrl],
+        pricing: pricingPlans,
+        services: serviceList,
+        reviews: reviewUrls,
         is_active: true,
       };
       const { error: insertError } = await supabase
@@ -294,6 +355,34 @@ export default function AdminNew() {
             />
             設為熱門推薦（卡片顯示 🔥 徽章）
           </label>
+
+          {/* 基礎消費方案 */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-amber-300">
+              <span aria-hidden="true">◆</span> 基礎消費方案
+            </h3>
+            <PricingEditor value={pricing} onChange={setPricing} />
+          </div>
+
+          {/* 服務內容 */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-amber-300">
+              <span aria-hidden="true">◆</span> 服務內容
+            </h3>
+            <ServicesEditor value={services} onChange={setServices} />
+          </div>
+
+          {/* 客評截圖（僅圖片） */}
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-amber-300">
+              <span aria-hidden="true">◆</span> 客評截圖
+            </h3>
+            <ReviewsUploader
+              value={reviews}
+              onChange={setReviews}
+              onError={setError}
+            />
+          </div>
 
           {error && (
             <p className="rounded-xl border border-red-500/30 bg-red-950/30 px-3.5 py-2.5 text-sm text-red-300">

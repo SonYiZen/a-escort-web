@@ -143,3 +143,18 @@ export async function fetchAllGirlsAdmin(): Promise<GirlRow[]> {
   if (error) throw new Error(error.message);
   return (data ?? []) as GirlRow[];
 }
+
+/** 後台編輯用：依 id 取單一原始列（含下架），找不到回傳 null */
+export async function fetchAdminGirlRow(id: string): Promise<GirlRow | null> {
+  const { data, error } = await supabase
+    .from("girls")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    console.error("[girls] fetchAdminGirlRow 失敗：", error.message);
+    return null;
+  }
+  if (!data) return null;
+  return data as GirlRow;
+}

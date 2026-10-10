@@ -168,6 +168,12 @@ export default function AdminHome() {
                       </span>
                     </div>
                     <div className="mt-3 flex gap-2">
+                      <Link
+                        href={`/admin/${row.id}/edit`}
+                        className="flex-1 rounded-xl border border-sky-400/30 bg-sky-400/10 px-3 py-2 text-center text-xs font-bold text-sky-200 transition-colors hover:bg-sky-400/20"
+                      >
+                        ✏️ 編輯
+                      </Link>
                       <button
                         type="button"
                         disabled={busy}

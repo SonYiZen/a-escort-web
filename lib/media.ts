@@ -101,3 +101,21 @@ export async function uploadGirlMedia(file: File): Promise<{
 
   return { publicUrl: data.publicUrl, kind, path };
 }
+
+/** 客評截圖專用：只允許圖片（JPG/PNG/WebP/GIF），上限 5MB */
+export async function uploadReviewImage(file: File): Promise<{
+  publicUrl: string;
+  path: string;
+}> {
+  const { kind } = validateMediaFile(file);
+  if (kind !== "image") {
+    throw new Error("客評截圖只能上傳圖片（JPG/PNG/WebP/GIF）。");
+  }
+  const { publicUrl, path } = await uploadGirlMedia(file);
+  return { publicUrl, path };
+}
+
+/** 數字價格 → "$3,200" 顯示文字 */
+export function formatPriceLabel(price: number): string {
+  return `$${Math.round(price).toLocaleString("en-US")}`;
+}
