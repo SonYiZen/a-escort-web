@@ -3,13 +3,16 @@
 /**
  * 首頁：組合跑馬燈／篩選器／圖卡清單／浮動導覽列
  * 路徑：app/page.tsx
+ *
+ * 資料來源：Supabase girls 表（is_active = true），未設定 env 時降級為 mockData。
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import FilterModal from "@/components/FilterModal";
 import FilterSection from "@/components/FilterSection";
 import GirlCard from "@/components/GirlCard";
 import { girlsData, LINE_URL, TELEGRAM_URL } from "@/data/mockData";
+import { fetchActiveGirls } from "@/lib/girls";
 import type { FilterState, Girl } from "@/types";
 
 /** 初始篩選狀態：三個維度皆為「全部」 */
@@ -46,6 +49,34 @@ function matchesFilters(girl: Girl, filters: FilterState): boolean {
 export default function Home() {
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  // Supabase 資料：先用 mockData 佔位避免首屏空白，載入完成後替換
+  const [girls, setGirls] = useState<Girl[]>(girlsData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 向 Supabase 撈取上架中的完整資料（僅 is_active = true）
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const rows = await fetchActiveGirls();
+        if (!cancelled) {
+          setGirls(rows);
+          setLoadError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : "載入失敗");
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /** 更新某個維度的篩選值，其餘條件保留，達成多維度連動過濾 */
   const handleFilterChange = useCallback(
@@ -59,10 +90,10 @@ export default function Home() {
   const openFilter = useCallback(() => setIsFilterOpen(true), []);
   const closeFilter = useCallback(() => setIsFilterOpen(false), []);
 
-  /** 依目前條件過濾後的清單 */
+  /** 依目前條件過濾後的清單（地區／國籍／預算三維連動） */
   const filteredGirls = useMemo(
-    () => girlsData.filter((girl) => matchesFilters(girl, filters)),
-    [filters],
+    () => girls.filter((girl) => matchesFilters(girl, filters)),
+    [girls, filters],
   );
 
   return (
@@ -92,7 +123,18 @@ export default function Home() {
 
         {/* 卡片清單 */}
         <main className="flex-1 px-4 pt-3 pb-32">
-          {filteredGirls.length > 0 ? (
+          {isLoading ? (
+            <div className="mt-16 flex flex-col items-center gap-3 text-center">
+              <span className="h-8 w-8 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
+              <p className="text-sm text-zinc-400">載入佳人資料中…</p>
+            </div>
+          ) : loadError ? (
+            <div className="mt-16 flex flex-col items-center gap-3 text-center">
+              <span className="text-4xl">⚠️</span>
+              <p className="text-sm text-zinc-400">資料載入失敗：{loadError}</p>
+              <p className="text-xs text-zinc-600">目前顯示備用資料，請稍後再試</p>
+            </div>
+          ) : filteredGirls.length > 0 ? (
             <div className="grid grid-cols-2 gap-3">
               {filteredGirls.map((girl) => (
                 <GirlCard key={girl.id} girl={girl} />

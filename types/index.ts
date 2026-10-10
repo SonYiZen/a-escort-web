@@ -42,6 +42,8 @@ export interface Girl {
   priceRange: BudgetLevel;
   /** 照片網址 */
   imageUrl: string;
+  /** 是否上架中（前台只顯示 true；後台可管理 false） */
+  isActive?: boolean;
   /** 是否為熱門推薦（卡片會顯示徽章） */
   isHot?: boolean;
   /** 服務標籤，例如 "可外約"、"精油SPA" */

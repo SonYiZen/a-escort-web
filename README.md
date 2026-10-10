@@ -49,7 +49,62 @@ types/index.ts             # Girl / PricingPlan / FilterState 型別
 data/mockData.ts           # 模擬資料庫（pricing、reviews、LINE/TG 連結）
 public/girls/              # 佳人佔位圖（上線前替換為真實照片）
 public/reviews/            # 客評截圖佔位圖（後端上傳真圖替換即可）
+lib/
+  supabase.ts              # Supabase 客戶端（讀 SUPABASE_URL / SUPABASE_ANON_KEY）
+  girls.ts                 # DB snake_case ↔ Girl camelCase 轉換 + 查詢函式
+supabase/schema.sql        # girls 建表 + RLS + 種子資料（貼到 SQL Editor 執行）
+app/admin/page.tsx         # 後台列表：上/下架切換 + 刪除
+app/admin/new/page.tsx     # 後台上架表單：填寫後 INSERT 進 Supabase
 ```
+
+---
+
+## Supabase 串接與後台操作
+
+### 1. 建立資料表（在 Supabase SQL Editor 執行一次）
+
+1. 開啟 Supabase Dashboard → 左側 **SQL Editor** → **New query**。
+2. 把 `supabase/schema.sql` 整份貼上 → **Run**。
+3. 內容包含三段：建表（含需求欄位 + 詳細頁延伸欄位）→ RLS 政策 →
+   6 筆種子資料（與現有 mockData 對應，id 固定方便驗證）。
+
+### 2. 設定環境變數
+
+```bash
+# 複製範本後填入真實值
+copy .env.example .env.local
+```
+
+| 變數 | 取得位置 |
+|------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` / `SUPABASE_URL` | Dashboard → Project Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_ANON_KEY` | 同上 → Project API keys → anon public |
+
+前台瀏覽器只能讀到 `NEXT_PUBLIC_` 開頭的變數，所以兩組填相同值。
+**Vercel 上線**：Dashboard → 你的專案 → Settings → Environment Variables，
+把上面四個變數同樣加上後重新部署。
+
+> 未設定 env 時前台自動降級為 `mockData.ts`，後台顯示提示而不崩潰，
+> 所以本地 `npm run dev` 不填金鑰也能正常預覽版面。
+
+### 3. 前台行為
+
+- 首頁（`app/page.tsx`）：掛載後 `fetchActiveGirls()` 只撈 `is_active = true`，
+  地區／國籍／預算三維篩選維持前端即時連動。
+- 詳細頁（`app/product/[id]/page.tsx`）：`fetchGirlById(id)` 即時查詢，
+  找不到或已下架 → 404「此對象暫時不在線或已被下架」。
+- Supabase 的 `id` 為 uuid，舊版 `g-001` 等靜態路由不再預渲染，
+  上架後以前台實際 id 連結為準。
+
+### 4. 後台操作
+
+- 列表：<http://localhost:3000/admin> —— 顯示全部（含下架），
+  每列有「上架／下架」切換與「刪除」（二次確認）。
+- 新增：<http://localhost:3000/admin/new> —— 填寫名字、地區／國籍／預算、
+  價格、年齡身高體重罩杯、圖片網址，按「確認上架」即 INSERT。
+- ⚠️ 目前後台無登入保護，RLS 暫為匿名可寫（MVP 方便測試）。
+  正式上線前請：Supabase 開啟 Auth 登入 → 把 `schema.sql` 註解中的
+  `girls_admin_write_authenticated` 政策換上，並給後台加登入守衛。
 
 ---
 
@@ -80,7 +135,7 @@ git remote -v
 5. 按 **Create repository**，記下頁面顯示的 HTTPS 網址，例如：
 
 ```text
-https://github.com/<你的帳號>/a-escort-web.git
+https://github.com/SonYiZen/a-escort-web.git
 ```
 
 ### 步驟 2：把目前的變更先提交到本機

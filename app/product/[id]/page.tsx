@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import ImageCarousel from "@/components/ImageCarousel";
-import { getGirlById, girlsData, LINE_URL, TELEGRAM_URL } from "@/data/mockData";
+import { LINE_URL, TELEGRAM_URL } from "@/data/mockData";
+import { fetchGirlById } from "@/lib/girls";
 import type { Girl } from "@/types";
 
 interface ProductPageProps {
@@ -11,20 +13,13 @@ interface ProductPageProps {
 }
 
 /**
- * 建構時產生所有靜態路徑，讓 6 位佳人的頁面都能被預先渲染
- */
-export function generateStaticParams() {
-  return girlsData.map((girl) => ({ id: girl.id }));
-}
-
-/**
- * 依 id 動態產生頁面標題（SEO）
+ * 依 id 動態產生頁面標題（SEO），直接向 Supabase 查詢
  */
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
   const { id } = await params;
-  const girl = getGirlById(id);
+  const girl = await fetchGirlById(id);
 
   if (!girl) {
     return { title: "此對象暫時不在線或已被下架" };
@@ -273,19 +268,37 @@ function GirlDetail({ girl }: { girl: Girl }) {
   );
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+/** Suspense 內層：解析 params + 向 Supabase 查詢（整段請求期串流） */
+async function GirlDetailLoader({ params }: ProductPageProps) {
   const { id } = await params;
-  const girl = getGirlById(id);
+  // 直接向 Supabase 查詢單一模特兒；找不到或已下架則 404
+  const girl = await fetchGirlById(id);
 
-  // 找不到資料：回傳 404 狀態碼，並渲染友善提示畫面
-  if (!girl) {
+  // 下架對象前台不可見，同樣導向 not-found（後台仍可管理）
+  if (!girl || girl.isActive === false) {
     notFound();
   }
 
+  return <GirlDetail girl={girl} />;
+}
+
+/** Suspense 外層骨架：查詢中顯示載入動畫 */
+function DetailSkeleton() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+      <span className="h-8 w-8 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
+      <p className="text-sm text-zinc-400">載入佳人資料中…</p>
+    </div>
+  );
+}
+
+export default function ProductPage({ params }: ProductPageProps) {
   return (
     <div className="min-h-screen bg-[#0B0F19] text-white">
       <div className="relative mx-auto w-full max-w-md">
-        <GirlDetail girl={girl} />
+        <Suspense fallback={<DetailSkeleton />}>
+          <GirlDetailLoader params={params} />
+        </Suspense>
       </div>
     </div>
   );
