@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+/* Tailwind v4：以 @theme 註冊自訂動畫，即可使用 animate-* 工具類別 */
+@theme {
+  --animate-marquee: marquee 22s linear infinite;
+  --animate-shimmer: shimmer 3s linear infinite;
+  --animate-shine: shine 2.6s ease-in-out infinite;
+  --animate-sheet-in: sheet-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-sheet-out: sheet-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+  --animate-backdrop-in: backdrop-in 0.3s ease-out both;
+  --animate-backdrop-out: backdrop-out 0.26s ease-in both;
+}
+
+/* 跑馬燈：內容寬度為兩倍，位移 50% 即可無縫循環 */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* 金色漸層背景流動，營造閃爍質感 */
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* 掠光效果 */
+@keyframes shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  60%,
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* 彈出視窗：由畫面底部向上滑出 */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 彈出視窗：關閉時向下滑入 */
+@keyframes sheet-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+}
+
+/* 背景遮罩淡入淡出 */
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* 跑馬燈內容（含重複的一份）需撐滿容器寬度 */
+.marquee-content {
+  display: inline-flex;
+  align-items: center;
+  min-width: max-content;
+}
+
+.marquee-track {
+  width: max-content;
+  animation: var(--animate-marquee);
+}
+
+/* 隱藏水平捲軸，讓篩選按鈕列更貼近原生 App 手感 */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 尊重系統的「減少動態效果」設定 */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .animate-shimmer,
+  .animate-shine,
+  .animate-sheet-in,
+  .animate-sheet-out,
+  .animate-backdrop-in,
+  .animate-backdrop-out {
+    animation: none;
+  }
+}
