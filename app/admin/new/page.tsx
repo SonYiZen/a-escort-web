@@ -318,7 +318,7 @@ export default function AdminNew() {
               className="w-full rounded-xl border border-dashed border-amber-400/40 bg-black/40 px-3.5 py-3 text-sm text-zinc-300 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-amber-300 file:to-yellow-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-black"
             />
             <p className="mt-1.5 text-[11px] text-zinc-500">
-              圖片上限 5MB（JPG/PNG/WebP/GIF），影片上限 50MB（MP4/WebM/MOV）
+              圖片上限 10MB（JPG/PNG/WebP/GIF），影片上限 50MB（MP4/WebM/MOV）
             </p>
           </Field>
 

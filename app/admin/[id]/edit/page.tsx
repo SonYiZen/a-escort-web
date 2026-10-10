@@ -27,6 +27,10 @@ import type { PricingPlan } from "@/types";
 const inputClass =
   "w-full rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-amber-400/60";
 
+const REGIONS = ["新竹市", "竹北市", "竹東", "竹南"];
+const NATIONALITIES = ["本島台妹", "溫柔越妹", "白皙泰妹", "熱情菲妹"];
+const BUDGETS = ["3K↓", "3K - 4K", "4K - 6K", "6K以上"];
+
 function Field({
   label,
   children,
@@ -82,7 +86,6 @@ function AdminEditInner({ params }: EditPageProps) {
   const [nationality, setNationality] = useState("");
   const [budget, setBudget] = useState("");
   const [price, setPrice] = useState("");
-  const [priceLabel, setPriceLabel] = useState("");
   const [age, setAge] = useState("");
   const [height, setHeight] = useState("");
   const [weight, setWeight] = useState("");
@@ -120,7 +123,6 @@ function AdminEditInner({ params }: EditPageProps) {
         setNationality(data.nationality ?? "");
         setBudget(data.price_range ?? "");
         setPrice(String(data.price ?? ""));
-        setPriceLabel(data.price_label ?? "");
         setAge(String(data.age ?? ""));
         setHeight(String(data.height ?? ""));
         setWeight(String(data.weight ?? ""));
@@ -217,8 +219,8 @@ function AdminEditInner({ params }: EditPageProps) {
           region,
           nationality,
           price: Math.round(priceNum),
-          price_label:
-            priceLabel.trim() || `${(priceNum / 1000).toFixed(1)}K/1s`,
+          // 價位顯示由價格自動產生（例：3500 → 3.5K/1s）
+          price_label: `${(priceNum / 1000).toFixed(1)}K/1s`,
           age: Math.round(ageNum),
           height: Math.round(heightNum) || 160,
           weight: Math.round(weightNum) || 45,
@@ -295,45 +297,55 @@ function AdminEditInner({ params }: EditPageProps) {
 
           <div className="grid grid-cols-3 gap-3">
             <Field label="地區 *">
-              <input
+              <select
                 className={inputClass}
                 value={region}
                 onChange={(e) => setRegion(e.target.value)}
-              />
+              >
+                {REGIONS.map((r) => (
+                  <option key={r} value={r} className="bg-[#0B0F19]">
+                    {r}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="國籍 *">
-              <input
+              <select
                 className={inputClass}
                 value={nationality}
                 onChange={(e) => setNationality(e.target.value)}
-              />
+              >
+                {NATIONALITIES.map((n) => (
+                  <option key={n} value={n} className="bg-[#0B0F19]">
+                    {n}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="預算級距 *">
-              <input
+              <select
                 className={inputClass}
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
-              />
+              >
+                {BUDGETS.map((b) => (
+                  <option key={b} value={b} className="bg-[#0B0F19]">
+                    {b}
+                  </option>
+                ))}
+              </select>
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="價格（整數 NT$） *">
-              <input
-                className={inputClass}
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                inputMode="numeric"
-              />
-            </Field>
-            <Field label="價位顯示">
-              <input
-                className={inputClass}
-                value={priceLabel}
-                onChange={(e) => setPriceLabel(e.target.value)}
-              />
-            </Field>
-          </div>
+          <Field label="價格（整數 NT$） *">
+            <input
+              className={inputClass}
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              inputMode="numeric"
+              placeholder="3500"
+            />
+          </Field>
 
           <div className="grid grid-cols-4 gap-3">
             <Field label="年齡 *">

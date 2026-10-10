@@ -19,8 +19,8 @@ const ALLOWED_IMAGE_TYPES = [
 /** 允許的影片類型 */
 const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 
-/** 單檔上限：圖片 5MB、影片 50MB */
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+/** 單檔上限：圖片 10MB、影片 50MB */
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
 
 export type MediaKind = "image" | "video";
@@ -43,7 +43,7 @@ export function validateMediaFile(file: File): {
   const kind: MediaKind = isVideo ? "video" : "image";
   const limit = kind === "video" ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
   if (file.size > limit) {
-    const limitLabel = kind === "video" ? "50MB" : "5MB";
+    const limitLabel = kind === "video" ? "50MB" : "10MB";
     throw new Error(`檔案過大（上限 ${limitLabel}），請壓縮後再上傳。`);
   }
   if (file.size === 0) {
@@ -102,7 +102,7 @@ export async function uploadGirlMedia(file: File): Promise<{
   return { publicUrl: data.publicUrl, kind, path };
 }
 
-/** 客評截圖專用：只允許圖片（JPG/PNG/WebP/GIF），上限 5MB */
+/** 客評截圖專用：只允許圖片（JPG/PNG/WebP/GIF），上限 10MB */
 export async function uploadReviewImage(file: File): Promise<{
   publicUrl: string;
   path: string;

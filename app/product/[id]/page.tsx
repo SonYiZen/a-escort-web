@@ -43,17 +43,17 @@ function DataRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** 服務內容勾選清單的一項 */
+/** 服務內容勾選清單的一項（三列顯示，字級略縮以容納） */
 function ServiceItem({ text }: { text: string }) {
   return (
-    <li className="flex items-center gap-2.5">
+    <li className="flex items-center gap-1.5">
       <span
         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-yellow-500 text-[11px] font-black text-black shadow-[0_0_10px_rgba(251,191,36,0.35)]"
         aria-hidden="true"
       >
         ✓
       </span>
-      <span className="text-sm text-zinc-200">{text}</span>
+      <span className="truncate text-xs text-zinc-200">{text}</span>
     </li>
   );
 }
@@ -185,7 +185,7 @@ function GirlDetail({ girl }: { girl: Girl }) {
             <h3 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-amber-300">
               <span aria-hidden="true">◆</span> 服務內容
             </h3>
-            <ul className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+            <ul className="grid grid-cols-3 gap-x-2 gap-y-2.5">
               {services.map((service) => (
                 <ServiceItem key={service} text={service} />
               ))}

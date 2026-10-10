@@ -69,7 +69,7 @@ export default function ReviewsUploader({
         className={inputClass}
       />
       <p className="text-[11px] text-zinc-500">
-        僅限圖片（JPG/PNG/WebP/GIF，單張 5MB 內），可一次多選
+        僅限圖片（JPG/PNG/WebP/GIF，單張 10MB 內），可一次多選
       </p>
       {(value.existingUrls.length > 0 || value.previews.length > 0) && (
         <div className="grid grid-cols-3 gap-2">
