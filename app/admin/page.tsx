@@ -36,7 +36,16 @@ export default function AdminHome() {
             .order("created_at", { ascending: false }),
         );
         if (cancelled) return;
-        if (response.error) throw new Error(response.error.message);
+        if (response.error) {
+          const msg = response.error.message;
+          // 常見原因翻譯：表不存在 / RLS 阻擋 / 金鑰錯誤
+          if (msg.includes("schema cache")) {
+            throw new Error(
+              "資料庫裡找不到 girls 表。請到 Supabase SQL Editor 重新執行 supabase/schema.sql（修復版），執行成功後重整此頁。",
+            );
+          }
+          throw new Error(msg);
+        }
         setRows((response.data ?? []) as GirlRow[]);
       } catch (err) {
         if (cancelled) return;

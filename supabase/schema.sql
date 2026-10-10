@@ -104,9 +104,7 @@ values
    array['/girls/girl-3.svg','/girls/girl-5.svg','/girls/girl-1.svg','/girls/girl-6.svg'],
    array['溫柔殘廢澡','全身油壓','絲足誘惑','配合度高','溫柔聽話'],
    '[{"label":"一節/50min/1S","price":5200,"priceLabel":"$5,200"},{"label":"兩節/100min/2S","price":10400,"priceLabel":"$10,400"},{"label":"三節送一節/200min/NS","price":15600,"priceLabel":"$15,600"}]'::jsonb,
-   array['/reviews/review-1.svg','/reviews/review-3.svg','/reviews/review-2.svg'], true)
-on conflict (id) do nothing;
-
+   array['/reviews/review-1.svg','/reviews/review-3.svg','/reviews/review-2.svg'], true),
   ('44444444-4444-4444-8444-444444444444', '熱情莎莎', '竹南', '熱情菲妹', 6800, '6.8K/2s', 24, 170, 54, 'F',
    '/girls/girl-4.svg', '6K以上', false,
    array['熱情活潑','可過夜'],
@@ -129,3 +127,8 @@ on conflict (id) do nothing;
    '[{"label":"一節/50min/1S","price":3200,"priceLabel":"$3,200"},{"label":"兩節/100min/2S","price":6400,"priceLabel":"$6,400"},{"label":"三節送一節/200min/NS","price":9600,"priceLabel":"$9,600"}]'::jsonb,
    array['/reviews/review-3.svg','/reviews/review-2.svg'], true)
 on conflict (id) do nothing;
+
+-- ----------------------------------------------------------------------------
+-- 4. 強制 PostgREST 重載 schema 快取（避免「schema cache」殘留舊狀態）
+-- ----------------------------------------------------------------------------
+notify pgrst, 'reload schema';
