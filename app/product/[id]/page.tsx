@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ImageCarousel from "@/components/ImageCarousel";
@@ -61,11 +62,25 @@ function ServiceItem({ text }: { text: string }) {
     </li>
   );
 }
+/** 基礎消費方案的一列 */
+function PricingRow({ label, priceLabel }: { label: string; priceLabel: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-amber-400/10 py-3 last:border-b-0">
+      <span className="text-sm text-zinc-200">{label}</span>
+      <span className="text-base font-bold tracking-wide text-red-400">
+        {priceLabel}
+      </span>
+    </div>
+  );
+}
+
 /** 取得到佳人時要渲染的完整內容 */
 function GirlDetail({ girl }: { girl: Girl }) {
   // 未提供 gallery 時，退回到單張主視覺
   const images = girl.gallery?.length ? girl.gallery : [girl.imageUrl];
   const services = girl.services ?? [];
+  const pricing = girl.pricing ?? [];
+  const reviews = girl.reviews ?? [];
 
   return (
     <>
@@ -141,17 +156,33 @@ function GirlDetail({ girl }: { girl: Girl }) {
           <DataRow label="地區" value={`📍 ${girl.region}`} />
           <DataRow label="國籍" value={`🌏 ${girl.nationality}`} />
           <DataRow
-            label="時間 / 價位"
-            value={`⏱ ${girl.duration ?? girl.priceLabel}`}
-          />
-          <DataRow
             label="身材數據"
             value={`${girl.age}歲 / ${girl.height}cm / ${girl.weight}kg / ${girl.cup}罩杯`}
           />
-          {girl.availableTime && (
-            <DataRow label="可預約時段" value={`🕐 ${girl.availableTime}`} />
-          )}
         </section>
+
+        {/* 基礎消費 */}
+        {pricing.length > 0 && (
+          <section className="overflow-hidden rounded-2xl border border-amber-400/25 bg-gradient-to-b from-amber-400/[0.08] to-white/[0.02]">
+            <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-1">
+              <h3 className="flex items-center gap-2 text-sm font-bold tracking-widest text-amber-200">
+                <span aria-hidden="true">◆</span> 基礎消費
+              </h3>
+              <span className="rounded-full bg-gradient-to-r from-amber-300 to-yellow-500 px-2.5 py-1 text-[10px] font-bold whitespace-nowrap text-black">
+                現金交易／不轉帳／不匯款／不點數
+              </span>
+            </div>
+            <div className="px-4 pt-1 pb-3">
+              {pricing.map((plan) => (
+                <PricingRow
+                  key={plan.label}
+                  label={plan.label}
+                  priceLabel={plan.priceLabel}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 服務內容勾選清單 */}
         {services.length > 0 && (
@@ -167,15 +198,30 @@ function GirlDetail({ girl }: { girl: Girl }) {
           </section>
         )}
 
-        {/* 詳細介紹 */}
-        {girl.description && (
+        {/* 客評截圖（由後端統一上傳，非互動評價區） */}
+        {reviews.length > 0 && (
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-            <h3 className="mb-2 flex items-center gap-2 text-xs font-bold tracking-widest text-amber-300">
-              <span aria-hidden="true">◆</span> 關於 {girl.name}
+            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-amber-300">
+              <span aria-hidden="true">◆</span> 客評截圖
             </h3>
-            <p className="text-sm leading-relaxed text-zinc-400">
-              {girl.description}
-            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {reviews.map((src, index) => (
+                <figure
+                  key={`${src}-${index}`}
+                  className="overflow-hidden rounded-xl border border-white/10 bg-black/40"
+                >
+                  <Image
+                    src={src}
+                    alt={`${girl.name} 客評截圖 ${index + 1}`}
+                    width={300}
+                    height={480}
+                    sizes="(max-width: 448px) 50vw, 200px"
+                    unoptimized
+                    className="h-auto w-full object-cover"
+                  />
+                </figure>
+              ))}
+            </div>
           </section>
         )}
 

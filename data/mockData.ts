@@ -37,10 +37,12 @@ export const girlsData: Girl[] = [
       "/girls/girl-5.svg",
     ],
     services: ["溫柔殘廢澡", "絲足誘惑", "配合度高", "溫柔聽話"],
-    duration: "1s 約 90 分鐘",
-    availableTime: "14:00 - 02:00",
-    description:
-      "氣質甜美的本島台妹，談吐溫柔有禮，擅長精油舒壓與全身放鬆。肌膚保養得宜，手感細緻，很懂得照顧對方情緒，適合想要被溫柔對待的您。",
+    pricing: [
+      { label: "一節/50min/1S", price: 3500, priceLabel: "$3,500" },
+      { label: "兩節/100min/2S", price: 7000, priceLabel: "$7,000" },
+      { label: "三節送一節/200min/NS", price: 10500, priceLabel: "$10,500" },
+    ],
+    reviews: ["/reviews/review-1.svg", "/reviews/review-2.svg"],
   },
   {
     id: "g-002",
@@ -62,10 +64,12 @@ export const girlsData: Girl[] = [
       "/girls/girl-4.svg",
     ],
     services: ["美白護膚", "美甲造型", "配合度高", "氣質交談"],
-    duration: "1s 約 90 分鐘",
-    availableTime: "15:00 - 01:00",
-    description:
-      "來自泰國的白皙妹子，膚色雪白細緻，妝容精緻。擅長美甲造型與美白護膚保養，個性內斂害羞但相當配合，喜歡白皙系的您千萬不能錯過。",
+    pricing: [
+      { label: "一節/50min/1S", price: 2800, priceLabel: "$2,800" },
+      { label: "兩節/100min/2S", price: 5600, priceLabel: "$5,600" },
+      { label: "三節送一節/200min/NS", price: 8400, priceLabel: "$8,400" },
+    ],
+    reviews: ["/reviews/review-2.svg", "/reviews/review-3.svg"],
   },
   {
     id: "g-003",
@@ -89,10 +93,16 @@ export const girlsData: Girl[] = [
       "/girls/girl-6.svg",
     ],
     services: ["溫柔殘廢澡", "全身油壓", "絲足誘惑", "配合度高", "溫柔聽話"],
-    duration: "2s 約 150 分鐘",
-    availableTime: "13:00 - 03:00",
-    description:
-      "溫柔體貼的越籍佳人，按摩手法專業，擅長全身油壓與經絡舒緩。講話輕聲細語，非常聽話配合，是放鬆身心的首選，回訪率極高。",
+    pricing: [
+      { label: "一節/50min/1S", price: 5200, priceLabel: "$5,200" },
+      { label: "兩節/100min/2S", price: 10400, priceLabel: "$10,400" },
+      { label: "三節送一節/200min/NS", price: 15600, priceLabel: "$15,600" },
+    ],
+    reviews: [
+      "/reviews/review-1.svg",
+      "/reviews/review-3.svg",
+      "/reviews/review-2.svg",
+    ],
   },
   {
     id: "g-004",
@@ -115,10 +125,12 @@ export const girlsData: Girl[] = [
       "/girls/girl-3.svg",
     ],
     services: ["熱情互動", "可過夜", "角色扮演", "配合度高", "伴遊外出"],
-    duration: "2s 約 150 分鐘",
-    availableTime: "20:00 - 06:00",
-    description:
-      "熱情活潑的菲籍妹子，身高 170 身材高挑，個性開朗外向。互動積極主動，可配合角色扮演，也接受伴遊外出與過夜，適合喜歡熱鬧氛圍的您。",
+    pricing: [
+      { label: "一節/50min/1S", price: 6800, priceLabel: "$6,800" },
+      { label: "兩節/100min/2S", price: 13600, priceLabel: "$13,600" },
+      { label: "三節送一節/200min/NS", price: 20400, priceLabel: "$20,400" },
+    ],
+    reviews: ["/reviews/review-3.svg", "/reviews/review-1.svg"],
   },
   {
     id: "g-005",
@@ -140,10 +152,12 @@ export const girlsData: Girl[] = [
       "/girls/girl-2.svg",
     ],
     services: ["溫柔殘廢澡", "精油SPA", "美甲保養", "氣質交談"],
-    duration: "1s 約 90 分鐘",
-    availableTime: "14:00 - 24:00",
-    description:
-      "氣質出眾的鄰家女孩類型，斯文有禮不張揚。精油芳療手法細膩，美甲保養也有基礎，相處起來像女朋友般自然舒服，適合喜歡清淡長久型的您。",
+    pricing: [
+      { label: "一節/50min/1S", price: 4600, priceLabel: "$4,600" },
+      { label: "兩節/100min/2S", price: 9200, priceLabel: "$9,200" },
+      { label: "三節送一節/200min/NS", price: 13800, priceLabel: "$13,800" },
+    ],
+    reviews: ["/reviews/review-2.svg", "/reviews/review-1.svg"],
   },
   {
     id: "g-006",
@@ -165,10 +179,12 @@ export const girlsData: Girl[] = [
       "/girls/girl-5.svg",
     ],
     services: ["可愛互動", "精油SPA", "絲足誘惑", "配合度高"],
-    duration: "1s 約 90 分鐘",
-    availableTime: "15:00 - 01:00",
-    description:
-      "年紀最輕的可愛系泰籍妹子，身材嬌小玲瓏，笑起來非常甜。個性黏人愛撒嬌，配合度極高，喜歡青春可愛類型的您一定會喜歡。",
+    pricing: [
+      { label: "一節/50min/1S", price: 3200, priceLabel: "$3,200" },
+      { label: "兩節/100min/2S", price: 6400, priceLabel: "$6,400" },
+      { label: "三節送一節/200min/NS", price: 9600, priceLabel: "$9,600" },
+    ],
+    reviews: ["/reviews/review-3.svg", "/reviews/review-2.svg"],
   },
 ];
 

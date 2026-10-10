@@ -50,12 +50,20 @@ export interface Girl {
   gallery?: string[];
   /** 服務內容勾選清單，例如 "溫柔殘廢澡"、"配合度高" */
   services?: string[];
-  /** 服務時長說明，例如 "1s 90分鐘"、"2s 150分鐘" */
-  duration?: string;
-  /** 詳細介紹文案 */
-  description?: string;
-  /** 可預約時段 */
-  availableTime?: string;
+  /** 基礎消費方案（對照參考圖1：一節／兩節／三節送一節） */
+  pricing?: PricingPlan[];
+  /** 客評截圖（由後端統一上傳的圖片路徑，非互動評價區） */
+  reviews?: string[];
+}
+
+/** 單一消費方案 */
+export interface PricingPlan {
+  /** 方案名稱，例如 "一節/50min/1S" */
+  label: string;
+  /** 實際價格（新台幣數字） */
+  price: number;
+  /** 價格顯示文字，例如 "$8,600" */
+  priceLabel: string;
 }
 
 /** 地區篩選選項（「竹東/竹南」為複合選項，同時涵蓋兩個地區） */
