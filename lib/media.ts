@@ -102,6 +102,52 @@ export async function uploadGirlMedia(file: File): Promise<{
   return { publicUrl: data.publicUrl, kind, path };
 }
 
+/** 主視覺配額：照片最多 6 張、影片最多 1 個 */
+export const MAX_MAIN_IMAGES = 6;
+export const MAX_MAIN_VIDEOS = 1;
+
+/** 主視覺待上傳檔案（含本機預覽） */
+export interface MainMediaDraft {
+  images: File[];
+  imagePreviews: string[];
+  video: File | null;
+  videoPreview: string | null;
+}
+
+export const EMPTY_MAIN_MEDIA: MainMediaDraft = {
+  images: [],
+  imagePreviews: [],
+  video: null,
+  videoPreview: null,
+};
+
+/**
+ * 逐張上傳主視覺，回傳網址清單（照片在前、影片在後）
+ * onProgress(current, total) 用於按鈕顯示進度
+ */
+export async function uploadMainMedia(
+  draft: MainMediaDraft,
+  onProgress?: (current: number, total: number) => void,
+): Promise<string[]> {
+  const total = draft.images.length + (draft.video ? 1 : 0);
+  const urls: string[] = [];
+  let done = 0;
+
+  for (const file of draft.images) {
+    const { publicUrl } = await uploadGirlMedia(file);
+    urls.push(publicUrl);
+    done += 1;
+    onProgress?.(done, total);
+  }
+  if (draft.video) {
+    const { publicUrl } = await uploadGirlMedia(draft.video);
+    urls.push(publicUrl);
+    done += 1;
+    onProgress?.(done, total);
+  }
+  return urls;
+}
+
 /** 客評截圖專用：只允許圖片（JPG/PNG/WebP/GIF），上限 10MB */
 export async function uploadReviewImage(file: File): Promise<{
   publicUrl: string;

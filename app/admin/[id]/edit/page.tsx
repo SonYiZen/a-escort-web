@@ -14,12 +14,15 @@ import PricingEditor, {
 import ReviewsUploader, {
   type ReviewDraft,
 } from "@/components/admin/ReviewsUploader";
+import MainMediaUploader from "@/components/admin/MainMediaUploader";
 import ServicesEditor from "@/components/admin/ServicesEditor";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
+  EMPTY_MAIN_MEDIA,
   formatPriceLabel,
-  uploadGirlMedia,
+  uploadMainMedia,
   uploadReviewImage,
+  type MainMediaDraft,
 } from "@/lib/media";
 import { fetchAdminGirlRow, type GirlRow } from "@/lib/girls";
 import type { PricingPlan } from "@/types";
@@ -93,9 +96,10 @@ function AdminEditInner({ params }: EditPageProps) {
   const [isHot, setIsHot] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
-  const [existingImageUrl, setExistingImageUrl] = useState("");
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [existingGallery, setExistingGallery] = useState<string[]>([]);
+  // 主視覺：照片最多 6 張、影片最多 1 個（本次新增）
+  const [mainMedia, setMainMedia] =
+    useState<MainMediaDraft>(EMPTY_MAIN_MEDIA);
 
   const [pricing, setPricing] = useState<PricingDraft[]>([]);
   const [services, setServices] = useState<string[]>([]);
@@ -129,7 +133,14 @@ function AdminEditInner({ params }: EditPageProps) {
         setCup(data.cup ?? "");
         setIsHot(Boolean(data.is_hot));
         setIsActive(Boolean(data.is_active));
-        setExistingImageUrl(data.image_url ?? "");
+        // gallery 為主視覺全部網址；舊資料 gallery 為空時退回 image_url
+        const gallery =
+          data.gallery && data.gallery.length > 0
+            ? [...data.gallery]
+            : data.image_url
+              ? [data.image_url]
+              : [];
+        setExistingGallery(gallery);
         setPricing(
           (data.pricing ?? []).map((p) => ({
             label: p.label,
@@ -154,13 +165,8 @@ function AdminEditInner({ params }: EditPageProps) {
     };
   }, [id]);
 
-  function handleMainFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setMediaFile(file);
-    setMediaPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return file ? URL.createObjectURL(file) : null;
-    });
+  function removeExistingMedia(index: number) {
+    setExistingGallery((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -180,12 +186,23 @@ function AdminEditInner({ params }: EditPageProps) {
 
     setIsSubmitting(true);
     try {
-      let imageUrl = existingImageUrl;
-      if (mediaFile) {
-        setProgress("上傳主視覺中…");
-        const uploaded = await uploadGirlMedia(mediaFile);
-        imageUrl = uploaded.publicUrl;
+      // 主視覺：上傳新增的，再與保留的既有網址合併（照片在前、影片在後）
+      const newCount =
+        mainMedia.images.length + (mainMedia.video ? 1 : 0);
+      if (existingGallery.length === 0 && newCount === 0) {
+        setError("請至少保留或上傳 1 張照片或 1 部影片");
+        setIsSubmitting(false);
+        return;
       }
+      let galleryUrls = [...existingGallery];
+      if (newCount > 0) {
+        setProgress(`上傳主視覺中（0/${newCount}）…`);
+        const uploaded = await uploadMainMedia(mainMedia, (done, total) =>
+          setProgress(`上傳主視覺中（${done}/${total}）…`),
+        );
+        galleryUrls = [...galleryUrls, ...uploaded];
+      }
+      const coverUrl = galleryUrls[0];
 
       const reviewUrls = [...reviews.existingUrls];
       if (reviews.files.length > 0) {
@@ -225,11 +242,11 @@ function AdminEditInner({ params }: EditPageProps) {
           height: Math.round(heightNum) || 160,
           weight: Math.round(weightNum) || 45,
           cup: cup.trim() || "C",
-          image_url: imageUrl,
+          image_url: coverUrl,
           price_range: budget,
           is_hot: isHot,
           is_active: isActive,
-          gallery: [imageUrl],
+          gallery: galleryUrls,
           pricing: pricingPlans,
           services: serviceList,
           reviews: reviewUrls,
@@ -382,36 +399,15 @@ function AdminEditInner({ params }: EditPageProps) {
             </Field>
           </div>
 
-          <Field label="主視覺（不選則沿用舊圖）">
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-              onChange={handleMainFileChange}
-              className="w-full rounded-xl border border-dashed border-amber-400/40 bg-black/40 px-3.5 py-3 text-sm text-zinc-300 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-amber-300 file:to-yellow-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-black"
+          <Field label="主視覺（照片最多 6 張 / 影片 1 個）">
+            <MainMediaUploader
+              existingUrls={existingGallery}
+              onRemoveExisting={removeExistingMedia}
+              draft={mainMedia}
+              onChange={setMainMedia}
+              onError={setError}
             />
           </Field>
-          {(mediaPreview || existingImageUrl) && (
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
-              {mediaFile?.type.startsWith("video/") ? (
-                <video
-                  src={mediaPreview ?? undefined}
-                  controls
-                  playsInline
-                  className="max-h-64 w-full object-contain"
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={mediaPreview ?? existingImageUrl}
-                  alt="主視覺預覽"
-                  className="max-h-64 w-full object-contain"
-                />
-              )}
-              <p className="px-3 py-2 text-[11px] text-zinc-500">
-                {mediaFile ? `新圖：${mediaFile.name}` : "目前使用既有圖片"}
-              </p>
-            </div>
-          )}
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
             <h3 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-widest text-amber-300">

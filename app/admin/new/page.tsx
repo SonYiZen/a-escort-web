@@ -7,7 +7,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import MainMediaUploader from "@/components/admin/MainMediaUploader";
 import PricingEditor, {
   type PricingDraft,
 } from "@/components/admin/PricingEditor";
@@ -17,9 +18,11 @@ import ReviewsUploader, {
 import ServicesEditor from "@/components/admin/ServicesEditor";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import {
+  EMPTY_MAIN_MEDIA,
   formatPriceLabel,
-  uploadGirlMedia,
+  uploadMainMedia,
   uploadReviewImage,
+  type MainMediaDraft,
 } from "@/lib/media";
 import type { GirlInsert } from "@/lib/girls";
 import type { PricingPlan } from "@/types";
@@ -50,7 +53,6 @@ const inputClass =
 
 export default function AdminNew() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,9 +67,8 @@ export default function AdminNew() {
   const [height, setHeight] = useState("163");
   const [weight, setWeight] = useState("48");
   const [cup, setCup] = useState("D");
-  // 本機選擇的檔案（取代原本的 imageUrl 手填輸入框）
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  // 主視覺：照片最多 6 張、影片最多 1 個
+  const [mainMedia, setMainMedia] = useState<MainMediaDraft>(EMPTY_MAIN_MEDIA);
   const [isHot, setIsHot] = useState(false);
 
   // 基礎消費方案（預設三列，可增刪）
@@ -85,16 +86,6 @@ export default function AdminNew() {
     previews: [],
   });
 
-  /** 選擇檔案：只取第一個，並產生本機預覽 */
-  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setMediaFile(file);
-    setMediaPreview((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return file ? URL.createObjectURL(file) : null;
-    });
-  }
-
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
@@ -108,7 +99,8 @@ export default function AdminNew() {
       return setError("價格需為正整數");
     if (!Number.isFinite(ageNum) || ageNum < 18)
       return setError("年齡需為 18 以上整數");
-    if (!mediaFile) return setError("請選擇要上傳的圖片或影片");
+    if (mainMedia.images.length === 0 && !mainMedia.video)
+      return setError("請至少上傳 1 張照片或 1 部影片");
 
     setIsSubmitting(true);
     try {
@@ -116,9 +108,14 @@ export default function AdminNew() {
         throw new Error("尚未設定 Supabase 環境變數，無法上架。");
       }
 
-      // 步驟 1：先上傳主視覺檔案到 girl-media
-      setUploadProgress("上傳主視覺中…");
-      const { publicUrl } = await uploadGirlMedia(mediaFile);
+      // 步驟 1：逐張上傳主視覺（照片在前、影片在後，第一張為封面）
+      const mediaCount =
+        mainMedia.images.length + (mainMedia.video ? 1 : 0);
+      setUploadProgress(`上傳主視覺中（0/${mediaCount}）…`);
+      const mediaUrls = await uploadMainMedia(mainMedia, (done, total) =>
+        setUploadProgress(`上傳主視覺中（${done}/${total}）…`),
+      );
+      const coverUrl = mediaUrls[0];
 
       // 步驟 2：逐張上傳客評截圖（僅圖片）
       let reviewUrls: string[] = [];
@@ -163,10 +160,10 @@ export default function AdminNew() {
         height: Math.round(heightNum) || 160,
         weight: Math.round(weightNum) || 45,
         cup: cup.trim() || "C",
-        image_url: publicUrl,
+        image_url: coverUrl,
         price_range: budget,
         is_hot: isHot,
-        gallery: [publicUrl],
+        gallery: mediaUrls,
         pricing: pricingPlans,
         services: serviceList,
         reviews: reviewUrls,
@@ -309,42 +306,15 @@ export default function AdminNew() {
             </Field>
           </div>
 
-          <Field label="主視覺檔案（圖片 / 影片） *">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-              onChange={handleFileChange}
-              className="w-full rounded-xl border border-dashed border-amber-400/40 bg-black/40 px-3.5 py-3 text-sm text-zinc-300 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-amber-300 file:to-yellow-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-black"
+          <Field label="主視覺檔案（照片 / 影片） *">
+            <MainMediaUploader
+              existingUrls={[]}
+              onRemoveExisting={() => {}}
+              draft={mainMedia}
+              onChange={setMainMedia}
+              onError={setError}
             />
-            <p className="mt-1.5 text-[11px] text-zinc-500">
-              圖片上限 10MB（JPG/PNG/WebP/GIF），影片上限 50MB（MP4/WebM/MOV）
-            </p>
           </Field>
-
-          {/* 本機預覽：圖片用 img，影片用 video */}
-          {mediaPreview && mediaFile && (
-            <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
-              {mediaFile.type.startsWith("video/") ? (
-                <video
-                  src={mediaPreview}
-                  controls
-                  playsInline
-                  className="max-h-64 w-full object-contain"
-                />
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={mediaPreview}
-                  alt="上傳預覽"
-                  className="max-h-64 w-full object-contain"
-                />
-              )}
-              <p className="truncate px-3 py-2 text-[11px] text-zinc-500">
-                {mediaFile.name} · {(mediaFile.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </div>
-          )}
 
           <label className="flex items-center gap-2.5 text-sm text-zinc-300">
             <input

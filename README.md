@@ -111,8 +111,9 @@ copy .env.example .env.local
 - `supabase/schema.sql` 第 5 節已包含建桶 + 公開讀取 + MVP 寫入政策，
   與 girls 表同一份 SQL 一起執行即可；後續只需執行第 5 節亦可。
 - 若 SQL 執行時出現 bucket 已存在的提示可忽略（代表之前建過）。
-- 檔案限制：圖片 5MB（JPG/PNG/WebP/GIF）、影片 50MB（MP4/WebM/MOV），
-  上傳路徑為 `girls/<timestamp>-<random>.<ext>` 避免檔名碰撞。
+- 檔案限制：主視覺照片最多 6 張（單張 10MB）、影片最多 1 個（50MB），
+  客評截圖僅限圖片；上傳路徑為 `girls/<timestamp>-<random>.<ext>` 避免檔名碰撞。
+  主視覺第一張照片為封面（寫入 `image_url`），全部寫入 `gallery` 供輪播顯示。
 - 前台 `GirlCard` / `ImageCarousel` 已支援影片網址（video 播放 + ▶ 縮圖）。
 - ⚠️ 同後台，Storage 目前為匿名可上傳（MVP）。正式上線前請換上
   `schema.sql` 註解中的 `girl-media auth write` 政策，並給後台加登入守衛。
