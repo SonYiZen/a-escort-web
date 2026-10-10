@@ -132,3 +132,40 @@ on conflict (id) do nothing;
 -- 4. 強制 PostgREST 重載 schema 快取（避免「schema cache」殘留舊狀態）
 -- ----------------------------------------------------------------------------
 notify pgrst, 'reload schema';
+
+-- ----------------------------------------------------------------------------
+-- 5. Storage：girl-media 儲存桶（公開讀取，MVP 匿名可上傳）
+--    注意：storage.buckets 無法用 IF NOT EXISTS，只能先 INSERT，
+--    已存在時會報 duplicate key，可忽略（或先到 Storage 頁面手動建立公開桶）。
+-- ----------------------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('girl-media', 'girl-media', true)
+on conflict (id) do nothing;
+
+-- 公開讀取：任何人可查看 girl-media 內的檔案（前台圖片顯示用）
+drop policy if exists "girl-media public read" on storage.objects;
+create policy "girl-media public read"
+  on storage.objects for select to anon, authenticated
+  using (bucket_id = 'girl-media');
+
+-- MVP 上傳：匿名可上傳（正式上線前請限縮為 authenticated）
+drop policy if exists "girl-media anon upload" on storage.objects;
+create policy "girl-media anon upload"
+  on storage.objects for insert to anon, authenticated
+  with check (bucket_id = 'girl-media');
+
+-- MVP 更新／刪除：匿名可管理（正式上線前請限縮為 authenticated）
+drop policy if exists "girl-media anon update" on storage.objects;
+create policy "girl-media anon update"
+  on storage.objects for update to anon, authenticated
+  using (bucket_id = 'girl-media') with check (bucket_id = 'girl-media');
+
+drop policy if exists "girl-media anon delete" on storage.objects;
+create policy "girl-media anon delete"
+  on storage.objects for delete to anon, authenticated
+  using (bucket_id = 'girl-media');
+
+-- 正式上線建議：刪掉上面三條 anon 寫入 policy，改用僅登入者可寫
+-- create policy "girl-media auth write"
+--   on storage.objects for all to authenticated
+--   using (bucket_id = 'girl-media') with check (bucket_id = 'girl-media');

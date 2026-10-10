@@ -1,14 +1,15 @@
 "use client";
 
 /**
- * 上架新增頁面：表單填寫後 INSERT 進 Supabase girls 表
+ * 上架新增頁面：選擇本機圖片/影片 → 上傳至 girl-media → 取公開網址 → INSERT
  * 路徑：app/admin/new/page.tsx
  */
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
+import { uploadGirlMedia } from "@/lib/media";
 import type { GirlInsert } from "@/lib/girls";
 
 const REGIONS = ["新竹市", "竹北市", "竹東", "竹南"];
@@ -37,7 +38,9 @@ const inputClass =
 
 export default function AdminNew() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
@@ -50,8 +53,20 @@ export default function AdminNew() {
   const [height, setHeight] = useState("163");
   const [weight, setWeight] = useState("48");
   const [cup, setCup] = useState("D");
-  const [imageUrl, setImageUrl] = useState("/girls/girl-1.svg");
+  // 本機選擇的檔案（取代原本的 imageUrl 手填輸入框）
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [isHot, setIsHot] = useState(false);
+
+  /** 選擇檔案：只取第一個，並產生本機預覽 */
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setMediaFile(file);
+    setMediaPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -66,13 +81,20 @@ export default function AdminNew() {
       return setError("價格需為正整數");
     if (!Number.isFinite(ageNum) || ageNum < 18)
       return setError("年齡需為 18 以上整數");
-    if (!imageUrl.trim()) return setError("請輸入圖片網址");
+    if (!mediaFile) return setError("請選擇要上傳的圖片或影片");
 
     setIsSubmitting(true);
     try {
       if (!isSupabaseConfigured()) {
         throw new Error("尚未設定 Supabase 環境變數，無法上架。");
       }
+
+      // 步驟 1：先上傳檔案到 girl-media
+      setUploadProgress("上傳檔案中…");
+      const { publicUrl } = await uploadGirlMedia(mediaFile);
+
+      // 步驟 2：拿公開網址 + 身材數據一起寫入 girls 表
+      setUploadProgress("寫入資料庫中…");
       const payload: GirlInsert = {
         name: name.trim(),
         region,
@@ -83,10 +105,10 @@ export default function AdminNew() {
         height: Math.round(heightNum) || 160,
         weight: Math.round(weightNum) || 45,
         cup: cup.trim() || "C",
-        image_url: imageUrl.trim(),
+        image_url: publicUrl,
         price_range: budget,
         is_hot: isHot,
-        gallery: [imageUrl.trim()],
+        gallery: [publicUrl],
         is_active: true,
       };
       const { error: insertError } = await supabase
@@ -99,6 +121,7 @@ export default function AdminNew() {
       setError(err instanceof Error ? err.message : "上架失敗");
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(null);
     }
   }
 
@@ -225,14 +248,42 @@ export default function AdminNew() {
             </Field>
           </div>
 
-          <Field label="圖片網址 *">
+          <Field label="主視覺檔案（圖片 / 影片） *">
             <input
-              className={inputClass}
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="/girls/girl-1.svg 或 https://…"
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+              onChange={handleFileChange}
+              className="w-full rounded-xl border border-dashed border-amber-400/40 bg-black/40 px-3.5 py-3 text-sm text-zinc-300 file:mr-3 file:rounded-lg file:border-0 file:bg-gradient-to-r file:from-amber-300 file:to-yellow-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-black"
             />
+            <p className="mt-1.5 text-[11px] text-zinc-500">
+              圖片上限 5MB（JPG/PNG/WebP/GIF），影片上限 50MB（MP4/WebM/MOV）
+            </p>
           </Field>
+
+          {/* 本機預覽：圖片用 img，影片用 video */}
+          {mediaPreview && mediaFile && (
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
+              {mediaFile.type.startsWith("video/") ? (
+                <video
+                  src={mediaPreview}
+                  controls
+                  playsInline
+                  className="max-h-64 w-full object-contain"
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={mediaPreview}
+                  alt="上傳預覽"
+                  className="max-h-64 w-full object-contain"
+                />
+              )}
+              <p className="truncate px-3 py-2 text-[11px] text-zinc-500">
+                {mediaFile.name} · {(mediaFile.size / 1024 / 1024).toFixed(2)} MB
+              </p>
+            </div>
+          )}
 
           <label className="flex items-center gap-2.5 text-sm text-zinc-300">
             <input
@@ -255,7 +306,7 @@ export default function AdminNew() {
             disabled={isSubmitting}
             className="w-full rounded-2xl bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-300 py-3.5 text-base font-black text-black shadow-[0_0_24px_rgba(251,191,36,0.4)] transition-transform active:scale-[0.98] disabled:opacity-50"
           >
-            {isSubmitting ? "上架中…" : "確認上架 ✨"}
+            {isSubmitting ? (uploadProgress ?? "上架中…") : "確認上架 ✨"}
           </button>
         </form>
       </div>

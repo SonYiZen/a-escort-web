@@ -101,7 +101,19 @@ copy .env.example .env.local
 - 列表：<http://localhost:3000/admin> —— 顯示全部（含下架），
   每列有「上架／下架」切換與「刪除」（二次確認）。
 - 新增：<http://localhost:3000/admin/new> —— 填寫名字、地區／國籍／預算、
-  價格、年齡身高體重罩杯、圖片網址，按「確認上架」即 INSERT。
+  價格、年齡身高體重罩杯，選擇本機圖片/影片後按「確認上架」，
+  自動上傳至 girl-media 並把公開網址寫入 girls 表。
+
+### 5. Storage 上傳（girl-media）
+
+- `supabase/schema.sql` 第 5 節已包含建桶 + 公開讀取 + MVP 寫入政策，
+  與 girls 表同一份 SQL 一起執行即可；後續只需執行第 5 節亦可。
+- 若 SQL 執行時出現 bucket 已存在的提示可忽略（代表之前建過）。
+- 檔案限制：圖片 5MB（JPG/PNG/WebP/GIF）、影片 50MB（MP4/WebM/MOV），
+  上傳路徑為 `girls/<timestamp>-<random>.<ext>` 避免檔名碰撞。
+- 前台 `GirlCard` / `ImageCarousel` 已支援影片網址（video 播放 + ▶ 縮圖）。
+- ⚠️ 同後台，Storage 目前為匿名可上傳（MVP）。正式上線前請換上
+  `schema.sql` 註解中的 `girl-media auth write` 政策，並給後台加登入守衛。
 - ⚠️ 目前後台無登入保護，RLS 暫為匿名可寫（MVP 方便測試）。
   正式上線前請：Supabase 開啟 Auth 登入 → 把 `schema.sql` 註解中的
   `girls_admin_write_authenticated` 政策換上，並給後台加登入守衛。

@@ -5,21 +5,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { isVideoUrl } from "@/lib/media";
 import type { Girl } from "@/types";
 
 export default function GirlCard({ girl }: { girl: Girl }) {
+  const isVideo = isVideoUrl(girl.imageUrl);
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] shadow-lg shadow-black/40 transition-all duration-300 hover:border-amber-400/40 hover:shadow-amber-500/10">
-      {/* 照片區 */}
+      {/* 照片區（影片則顯示 video 預覽） */}
       <div className="relative aspect-3/4 w-full overflow-hidden">
-        <Image
-          src={girl.imageUrl}
-          alt={`${girl.name} 照片`}
-          fill
-          sizes="(max-width: 448px) 45vw, 200px"
-          unoptimized
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
+        {isVideo ? (
+          <video
+            src={girl.imageUrl}
+            muted
+            playsInline
+            preload="metadata"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Image
+            src={girl.imageUrl}
+            alt={`${girl.name} 照片`}
+            fill
+            sizes="(max-width: 448px) 45vw, 200px"
+            unoptimized
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        )}
 
         {/* 熱門徽章 */}
         {girl.isHot && (

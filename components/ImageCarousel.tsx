@@ -10,6 +10,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
+import { isVideoUrl } from "@/lib/media";
 
 interface ImageCarouselProps {
   /** 圖片網址清單 */
@@ -68,22 +69,33 @@ export default function ImageCarousel({ images, name }: ImageCarouselProps) {
 
   return (
     <div className="relative">
-      {/* 主圖 */}
+      {/* 主圖（影片則顯示可播放 video） */}
       <div
         className="relative aspect-3/4 w-full overflow-hidden bg-black"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <Image
-          key={activeIndex}
-          src={images[activeIndex]}
-          alt={`${name} 照片 ${activeIndex + 1}`}
-          fill
-          sizes="(max-width: 448px) 100vw, 448px"
-          priority={activeIndex === 0}
-          unoptimized
-          className="object-cover transition-opacity duration-300"
-        />
+        {isVideoUrl(images[activeIndex]) ? (
+          <video
+            key={activeIndex}
+            src={images[activeIndex]}
+            controls
+            playsInline
+            preload="metadata"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <Image
+            key={activeIndex}
+            src={images[activeIndex]}
+            alt={`${name} 照片 ${activeIndex + 1}`}
+            fill
+            sizes="(max-width: 448px) 100vw, 448px"
+            priority={activeIndex === 0}
+            unoptimized
+            className="object-cover transition-opacity duration-300"
+          />
+        )}
 
         {/* 底部漸層遮罩 */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0B0F19] to-transparent" />
@@ -143,12 +155,13 @@ export default function ImageCarousel({ images, name }: ImageCarouselProps) {
         <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-4 py-3">
           {images.map((src, index) => {
             const isActive = index === activeIndex;
+            const isThumbVideo = isVideoUrl(src);
             return (
               <button
                 key={`${src}-${index}`}
                 type="button"
                 onClick={() => setActiveIndex(index)}
-                aria-label={`查看第 ${index + 1} 張照片`}
+                aria-label={`查看第 ${index + 1} 張${isThumbVideo ? "影片" : "照片"}`}
                 aria-current={isActive}
                 className={[
                   "relative h-16 w-14 shrink-0 overflow-hidden rounded-lg transition-all duration-200",
@@ -157,14 +170,20 @@ export default function ImageCarousel({ images, name }: ImageCarouselProps) {
                     : "opacity-55 hover:opacity-100",
                 ].join(" ")}
               >
-                <Image
-                  src={src}
-                  alt={`${name} 縮圖 ${index + 1}`}
-                  fill
-                  sizes="56px"
-                  unoptimized
-                  className="object-cover"
-                />
+                {isThumbVideo ? (
+                  <span className="flex h-full w-full items-center justify-center bg-black text-lg">
+                    ▶
+                  </span>
+                ) : (
+                  <Image
+                    src={src}
+                    alt={`${name} 縮圖 ${index + 1}`}
+                    fill
+                    sizes="56px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                )}
               </button>
             );
           })}
